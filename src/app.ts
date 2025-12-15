@@ -6,20 +6,23 @@ import { config } from './config';
 
 const app = express();
 
-app.use(express.json());
 app.use(
   cors({
     origin: config.dev
       ? '*'
       : (origin, callback) => {
-          if (origin && config.server.allowedOrigins.indexOf(origin) !== -1) {
+          const normalizedOrigin = origin?.trim().replace(/\/$/, '');
+          if (normalizedOrigin && config.server.allowedOrigins.includes(normalizedOrigin)) {
             callback(null, true);
-          } else {
-            callback(null, false);
+            return;
           }
+          callback(null, false);
         },
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   }),
 );
+
+app.use(express.json({ limit: config.server.maxBodySize }));
 
 app.get('/', (req, res) => {
   res.send('Hello');
