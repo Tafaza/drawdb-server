@@ -1,10 +1,31 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import axios, { type AxiosError } from 'axios';
+import axios from 'axios';
 import { Request, Response } from 'express';
 import { IGistCommitItem } from '../interfaces/gist-commit-item';
 import { IGistFile } from '../interfaces/gist-file';
 import { gistsBaseUrl, headers } from '../constants/gist-constants';
 import { GistService } from '../services/gist-service';
+
+function sendAxiosError(res: Response, error: unknown, notFoundMessage = 'Gist not found') {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    const responseMessage =
+      (error.response?.data as { message?: string } | undefined)?.message || error.message;
+
+    if (status === 404) {
+      res.status(404).json({ success: false, message: notFoundMessage });
+      return;
+    }
+
+    if (status) {
+      // Pass through GitHub status/message (e.g., 403 rate limit / secondary limit)
+      res.status(status).json({ success: false, message: responseMessage });
+      return;
+    }
+  }
+
+  res.status(500).json({ success: false, message: 'Something went wrong' });
+}
 
 async function get(req: Request, res: Response) {
   try {
@@ -39,17 +60,7 @@ async function get(req: Request, res: Response) {
     });
   } catch (e) {
     console.error(e);
-    if ((e as AxiosError).status === 404) {
-      res.status(404).json({
-        success: false,
-        message: 'Gist not found',
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Something went wrong',
-      });
-    }
+    sendAxiosError(res, e);
   }
 }
 
@@ -80,10 +91,7 @@ async function create(req: Request, res: Response) {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({
-      success: false,
-      message: 'Something went wrong',
-    });
+    sendAxiosError(res, e);
   }
 }
 
@@ -114,17 +122,7 @@ async function update(req: Request, res: Response) {
     });
   } catch (e) {
     console.error(e);
-    if ((e as AxiosError).status === 404) {
-      res.status(404).json({
-        success: false,
-        message: 'Gist not found',
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Something went wrong',
-      });
-    }
+    sendAxiosError(res, e);
   }
 }
 
@@ -138,17 +136,7 @@ async function del(req: Request, res: Response) {
     });
   } catch (e) {
     console.error(e);
-    if ((e as AxiosError).status === 404) {
-      res.status(404).json({
-        success: false,
-        message: 'Gist not found',
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Something went wrong',
-      });
-    }
+    sendAxiosError(res, e);
   }
 }
 
@@ -168,17 +156,8 @@ async function getCommits(req: Request, res: Response) {
       data: cleanData,
     });
   } catch (e) {
-    if ((e as AxiosError).status === 404) {
-      res.status(404).json({
-        success: false,
-        message: 'Gist not found',
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Something went wrong',
-      });
-    }
+    console.error(e);
+    sendAxiosError(res, e);
   }
 }
 
@@ -212,17 +191,8 @@ async function getRevision(req: Request, res: Response) {
       data: { ...rest, files: cleanedFiles },
     });
   } catch (e) {
-    if ((e as AxiosError).status === 404) {
-      res.status(404).json({
-        success: false,
-        message: 'Gist not found',
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Something went wrong',
-      });
-    }
+    console.error(e);
+    sendAxiosError(res, e);
   }
 }
 
@@ -324,17 +294,8 @@ async function getRevisionsForFile(req: Request, res: Response) {
       },
     });
   } catch (e) {
-    if ((e as AxiosError).status === 404) {
-      res.status(404).json({
-        success: false,
-        message: 'Gist not found',
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'Something went wrong',
-      });
-    }
+    console.error(e);
+    sendAxiosError(res, e);
   }
 }
 
